@@ -1,30 +1,7 @@
 .data
-    v: .word 10,20,30,40,50
-    suma: .space 4
+	write: .asciiz "hello"
+	file: .asciiz "output.txt"
 .text
-    li $s0, 0          # Inicializar suma a 0
-    li $t0, 0          # Inicializar índice del bucle a 0
-    li $t1, 20         # Tamaño del arreglo en bytes (5 * 4)
-
-for_loop:
-    # Verificar si hemos llegado al final del arreglo
-    bge $t0, $t1, end_loop
-
-    # Sumar el elemento actual al acumulador
-    lw $t2, v($t0)     # Cargar el valor del arreglo en $t2
-    add $s0, $s0, $t2  # Sumar al acumulador
-
-    # Incrementar el índice del bucle
-    addi $t0, $t0, 4   # Incrementar el índice (4 bytes por cada elemento)
-
-    # Volver al inicio del bucle
-    j for_loop
-
-end_loop:
-    # Almacenar el resultado de la suma en memoria
-    sw $s0, suma
-
-    # Imprimir el resultado de la suma
     li $v0, 1
-    move $a0, $s0      # Pasar el resultado a imprimir
+    la $a0, 33
     syscall

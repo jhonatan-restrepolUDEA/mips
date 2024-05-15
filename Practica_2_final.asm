@@ -5,7 +5,10 @@
 	separator: .space 4										# Espacio para el separador de 1 palabra para no tener problemas de alineacion.
 	.align 2
 	vector: .space 1024										# Espacio reservado para el vector donde estara los numeros a organizar.
+	outFilename: .asciiz "output.txt"  								# nombre del archivo para guardar el resultado.
 	newLine: .asciiz "\n"
+	.align 2
+	number: .space 4
 	
 	msgSeparator: .asciiz "Por favor ingrese el separador que conforma su archivo.\n"
 	msgContenido: .asciiz "Este es el contenido del archivo. \n"
@@ -16,6 +19,10 @@
 		jal getSeparator
 		jal processesBuffer
 		jal processesVector
+		la $a0, vector										# Cargar la direccion del vector para poder pasarlo a la funcion sorting.
+		add $a1, $s3, $zero									# Se mueve el valor de la cantidad de elemento del arreglo al registro a1, para pasar como argumento.
+		jal sortingVector
+		jal saveFile
 	
 	# Finalizar el programa
 	li $v0, 10											# Codigo para salir del sistema
@@ -85,6 +92,7 @@
 			la $t0, buffer									# Cargar la direccion del buffer
 			add $s0, $sp, $zero								# Guardar en $s0 la manera en como esta la pila hasta ahora.
 			la $t4, vector									# Direccion del vector.
+			add $s3, $zero, $zero								# Variable que contendra la cantidad de elementos del vector.
 			
 			leerNumeros:
 				lb $t1, ($t0)								# Cargamos el caracter inicial.
@@ -109,9 +117,72 @@
 					j cicloNumero							# Repetir ciclo
 				guardarNumero:
 					sw $s2, ($t4)							# Guardar el valor de la suma en la posicion del vector.
+					add $s3, $s3, 1							# Incremento de a una unidad los elementos que se guardaran en vector.
 					beqz $t1, fin							# Si el valor es cero, ya se finalizo el buffer
 					add $t4, $t4, 4							# Avanzar a la siguiente posicion en memoria.
 					j leerNumeros							# Saltar al ciclo principal para leer los otros numeros
 		fin:
 			jr $ra										# regresar a la pila de ejecucion.		
-			
+		
+		sortingVector:
+    			addi $t0, $zero, 1         							# $t0 = i = 1
+			LoopOuter:
+    				bge $t0, $a1, EndOuter     						# if i >= length, end the loop
+    				sll $t1, $t0, 2            						# $t1 = i * 4 (index of array[i])
+    				add $t1, $t1, $a0          						# $t1 = &array[i]
+    				lw $t2, 0($t1)             						# now = array[i]
+    				addi $t3, $t0, -1          						# $t3 = j = i - 1
+			LoopInner:
+    				blt $t3, $zero, EndInner   						# if j < 0, end the inner loop
+				sll $t4, $t3, 2            						# $t4 = j * 4 (index of array[j])
+    				add $t4, $t4, $a0          						# $t4 = &array[j]
+    				lw $t5, 0($t4)             						# array[j]
+    				blt $t5, $t2, EndInner     						# if array[j] < now, end the inner loop
+    				add $t6, $t4, 4            						# $t6 = (j + 1) * 4 (index of array[j+1])
+    				sw $t5, 0($t6)             						# array[j + 1] = array[j]
+    				addi $t3, $t3, -1          						# j--
+    				j LoopInner
+			EndInner:
+    				addi $t7, $t3, 1           						# $t7 = (j + 1)
+    				sll $t8, $t7, 2            						# $t8 = (j + 1) * 4 (index of array[j+1])
+    				add $t8, $t8, $a0          						# $t8 = &array[j+1]
+    				sw $t2, 0($t8)             						# array[j + 1] = now
+    				addi $t0, $t0, 1           						# i++
+    				j LoopOuter
+			EndOuter:
+    				jr $ra                      						# return
+				
+		saveFile:
+			openFile:
+				li $v0, 13								# Cargar el codigo para escribir en el archivo.
+				la $a0, outFilename							# Nombre del archivo
+				li $a1, 1								# Permisos para crear el archivo
+				syscall
+			writeFile:
+				la $t0, vector     							# Cargar la dirección base del vector
+    				add $t1, $s3, $zero          						# Inicializar el índice del vector desde la cantidad de elementos
+    				la $t5, separator							# Cargar la direccion del separador.
+    				move $s1, $v0								# Guardar el archivo abierto en S1
+
+			loop:
+				add $t1, $t1, -1        						# Reducir el indice.
+    				li $v0, 15          							# Cargar el código de la syscall para guardar el valor
+    				add $a0, $s1, $zero							# cargar el archivo a $a0
+    				lw $t2, ($t0)      							# Cargar el elemento del vector en $t2
+    				sb $t2, number								
+    				la $a1, number
+    				la $a2, 4								# Longitud del dato.
+    				syscall            							# Llamar a la syscall para imprimir el elemento
+    				add $t0, $t0, 4								# Seguir a la siguiente posicion.
+    				beqz $t1, closeFile   							# Si es el ultimo elemento salir y no imprimir la coma
+    				li $v0, 15								# Cargar el código de la syscall para imprimir un carácter
+    				add $a0, $s1, $zero
+    				la $a1, ($t5)								# Cargar el separador para usarlo luego.
+    				la $a2,  4								# Longitud del dato.
+    				syscall      
+    				j loop       							 	# Volver al inicio del bucle    				
+			closeFile:
+    				li $v0, 16         							# Cargar el código de la syscall para cerrar un archivo
+    				add $a0, $s0, $zero      						# Cargar el descriptor de archivo
+    				syscall            							# Llamar a la syscall para cerrar el archivo
+    				jr $ra             							# Retornar
