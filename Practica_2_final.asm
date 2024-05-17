@@ -19,10 +19,7 @@
 		jal getSeparator
 		jal processesBuffer
 		jal processesVector
-		la $a0, vector										# Cargar la direccion del vector para poder pasarlo a la funcion sorting.
-		add $a1, $s3, $zero									# Se mueve el valor de la cantidad de elemento del arreglo al registro a1, para pasar como argumento.
-		jal sortingVector
-		jal saveFile
+		
 	
 	# Finalizar el programa
 	li $v0, 10												# Codigo para salir del sistema
@@ -166,6 +163,10 @@
 
 			loop:
 				add $t1, $t1, -1        					# Reducir el indice.
+				li $v0, 1
+				sb $t2, number
+				la $a0, ($t2)
+				syscall
     				li $v0, 15          					# Cargar el c�digo de la syscall para guardar el valor
     				add $a0, $s1, $zero						# cargar el archivo a $a0
     				lw $t2, ($t0)      						# Cargar el elemento del vector en $t2
@@ -175,6 +176,9 @@
     				syscall            						# Llamar a la syscall para imprimir el elemento
     				add $t0, $t0, 4							# Seguir a la siguiente posicion.
     				beqz $t1, closeFile   					# Si es el ultimo elemento salir y no imprimir la coma
+    				li $v0, 4
+    				la $a0, ($t5)
+    				syscall
     				li $v0, 15								# Cargar el c�digo de la syscall para imprimir un car�cter
     				add $a0, $s1, $zero
     				la $a1, ($t5)							# Cargar el separador para usarlo luego.

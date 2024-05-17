@@ -1,0 +1,29 @@
+.data
+
+.text
+
+main:
+	add $t0, $zero, 7   # Separamos x = 7
+	add $t1, $zero, $zero # Separamos y = 0
+	jal func1   # llamar la func1 $v0 tendra su retorno
+	mul $t3, $t0, 4 # Multiplicar 4 * x
+	add $t3, $t3, $v0   # Sumamos la multiplicacion con el resultado de la funcion.
+	
+	li $v0, 10
+	syscall
+	
+func1:
+	add $sp, $sp, -4
+	sw $ra, ($sp)
+	jal func2  # llamar a la funcion 2
+	mul $v0, $s2, 2   # Multiplicamos a*2 y se guarda en $v0
+	lw $ra, ($sp)
+	add $sp, $sp, 4
+	jr $ra
+
+func2:
+	mul $s2, $t1, 257   # Guardamos la multiplicacion en $s2 como dicen.
+	jr $ra
+
+	
+	
